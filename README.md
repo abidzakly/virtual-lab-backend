@@ -7,7 +7,9 @@ Type and Enter the following instructions below:
 - Step 3: ".\***your virtual env name***\Scripts\Activate".
 - Step 4: "pip install fastapi uvicorn sqlalchemy pymysql".
 - Step 5: Type "uvicorn vlabApp.main:app --reload".
-- Step 6: Go to http://127.0.0.1:8000/docs/.
 - Done
+
+### Go to http://127.0.0.1:8000/docs/ for Api Docs.
+- You can also use Postman for testing.
 ## P.S.
 - Make sure MySQL is turned on. (use xampp, laragon, any)
