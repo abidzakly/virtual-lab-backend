@@ -13,3 +13,4 @@ Type and Enter the following instructions below:
 - You can also use Postman for testing.
 ## P.S.
 - Make sure MySQL is turned on. (use xampp, laragon, any)
+- Create a database/schema with a name ***virtualab*** for running it the first time.
