@@ -1,7 +1,7 @@
 # Virtual-Lab-Backend
 ## How To
 ### Test Locally (or host and forward it with ngrok)
-- Step 1: Open terminal (outside app folder). 
+- Step 1: Open terminal (outside app folder). Then, 
 Type and Enter the following instructions below:
 - Step 2: "python -m venv ***your virtual env name***".
 - Step 3: ".\***your virtual env name***\Scripts\Activate".
