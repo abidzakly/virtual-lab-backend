@@ -1,6 +1,40 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
+
+class RecentPostData(BaseModel):
+    title: str
+    description: Optional[str] = None
+    approval_status: str
+    created_at: datetime
+    post_type: str
+    post_id: int
+
+class PendingPostData(BaseModel):
+    author_username: str
+    post_id: int
+    post_type: str
+    created_at: datetime
+
+class ExerciseReview(BaseModel):
+    title: str
+    difficulty: str
+    question_count: int
+    exercise_id: int
+    author_username: str
+    author_nip: str
+
+class MaterialReview(BaseModel):
+    title: str
+    media_type: str
+    filename: str
+    description: str
+    material_id: int
+    author_username: str
+    author_nip: str
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
 
 class UserBase(BaseModel):
     full_name: str
@@ -8,11 +42,11 @@ class UserBase(BaseModel):
     user_type: int
     registration_status: Optional[str] = 'PENDING'
     school: str
-    registration_date: Optional[str] = None
+    registration_date: Optional[datetime] = datetime.now()
+    updated_at: Optional[datetime] = datetime.now()
 
 class UserCreate(UserBase):
     email: EmailStr
-    password: Optional[str] = None
 
 class User(UserBase):
     user_id: int
@@ -23,6 +57,11 @@ class User(UserBase):
 class UserLogin(BaseModel):
     username: str
     password: str
+
+class UserUpdate(BaseModel):
+    email: EmailStr
+    password: Optional[str] = None
+    updated_at: Optional[datetime] = datetime.now()
 
 class CombinedUser(BaseModel):
     user_id: int
@@ -60,9 +99,9 @@ class Student(StudentBase):
 class MaterialBase(BaseModel):
     title: str
     media_type: str
-    media_path: str
+    filename: str
     description: Optional[str]
-    approval_status: Optional[str] = 'pending'
+    approval_status: Optional[str] = 'DRAFT'
 
 class MaterialCreate(MaterialBase):
     author_id: int
@@ -78,10 +117,12 @@ class ExerciseBase(BaseModel):
     title: str
     difficulty: str
     question_count: int
-    approval_status: Optional[str] = 'pending'
+    approval_status: Optional[str] = 'DRAFT'
+    created_at: Optional[datetime] = datetime.now()
+    updated_at: Optional[datetime] = datetime.now()
 
 class ExerciseCreate(ExerciseBase):
-    author_id: int
+    author_id: Optional[int] = None
 
 class Exercise(ExerciseBase):
     exercise_id: int
@@ -91,9 +132,9 @@ class Exercise(ExerciseBase):
         from_attributes = True
 
 class QuestionBase(BaseModel):
-    question_type: str
     question_text: str
-    answer_key: str
+    option_text: List[str]
+    answer_keys: List[str]
 
 class QuestionCreate(QuestionBase):
     exercise_id: int
@@ -105,22 +146,40 @@ class Question(QuestionBase):
     class Config:
         from_attributes = True
 
-class OptionBase(BaseModel):
-    option_text: str
+# class OptionBase(BaseModel):
+#     option_text: List[str]
 
-class OptionCreate(OptionBase):
+# class OptionCreate(OptionBase):
+#     question_id: int
+
+# class Option(OptionBase):
+#     option_id: int
+#     question_id: int
+
+#     class Config:
+#         from_attributes = True
+
+class Answer(BaseModel):
     question_id: int
+    selected_option: List[str]
 
-class Option(OptionBase):
-    option_id: int
+class SubmitExerciseRequest(BaseModel):
+    answers: List[Answer]
+
+class AnswerResult(BaseModel):
     question_id: int
+    question: str
+    selected_option: List[str]
+    correct_option: List[str]
+    correct: bool
 
-    class Config:
-        from_attributes = True
-
+class SubmitExerciseResponse(BaseModel):
+    answer_results: List[AnswerResult]
+    score: float
+# -------------------------------------------
 class StudentExerciseResultBase(BaseModel):
-    score: int
-    completion_date: Optional[datetime]
+    score: float
+    completion_date: Optional[datetime] = datetime.now()
 
 class StudentExerciseResultCreate(StudentExerciseResultBase):
     student_id: int
@@ -150,15 +209,22 @@ class StudentAnswer(StudentAnswerBase):
         from_attributes = True
 
 class PengenalanReaksiBase(BaseModel):
-    video_path: str
+    filename: Optional[str] = None
+    title: str
     description: str
 
 class PengenalanReaksiCreate(PengenalanReaksiBase):
-    pass
+    created_at: Optional[datetime] = datetime.now()
+
+class PengenalanReaksiUpdate(BaseModel):
+    filename: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    updated_at: Optional[datetime] = datetime.now()
 
 class PengenalanReaksi(PengenalanReaksiBase):
     intro_id: int
-    last_updated: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True
