@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Header, status
+from fastapi import APIRouter, HTTPException, status
 from ..schemas import schemas, utils
 from ..models.models import User, Teacher, Student, Material, Exercise
 from ..dependencies.dependencies import db_dependency, current_user_dependency

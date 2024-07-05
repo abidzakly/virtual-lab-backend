@@ -42,7 +42,7 @@ async def add_materi(
             author_id=current_user.user_id,
             approval_status="PENDING",
             created_at=datetime.now(),
-            updated_at=datetime.now()
+            updated_at=datetime.now(),
         )
 
         db.add(db_materi)
@@ -54,9 +54,9 @@ async def add_materi(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Get Materi by Author
+# Get My Materi
 @router.get("", status_code=status.HTTP_200_OK)
-async def get_materi_by_author(
+async def get_my_materials(
     db: db_dependency, current_user: User = current_user_dependency
 ):
     if current_user.user_type != 1:
@@ -72,20 +72,27 @@ async def get_materi_by_author(
     return sorted_materials
 
 
-# # Get All Pending Materi
-# @router.get("/pending", status_code=status.HTTP_200_OK)
-# async def get_pending_materi(
-#     db: db_dependency,
-#     current_user: User = current_user_dependency,
-# ):
-#     if not utils.is_valid_Authorization(current_user.email):
-#         raise HTTPException(status_code=401, detail="Akun ini tidak diberi ijin.")
+# Get All Approved Materi
+@router.get("/approved", status_code=status.HTTP_200_OK)
+async def get_all_approved_materials(
+    db: db_dependency, current_user: User = current_user_dependency
+):
+    materials = db.query(Material).filter(Material.approval_status == "APPROVED").all()
+    if not materials:
+        raise HTTPException(status_code=404, detail="Materi tidak ditemukan")
+    
+    material_sorted = sorted(materials, key=lambda x: x.created_at, reverse=True)
+    
+    new_materials = []
+    for item in material_sorted:
+        modified_material = {
+            "material_id": item.material_id,
+            "title": item.title,
+            "description": item.description
+        }
+        new_materials.append(modified_material)
 
-#     db_materials = (
-#         db.query(Material).filter(Material.approval_status == "PENDING").all()
-#     )
-#     sorted_pending_materials = sorted(db_materials, key=lambda x: x.created_at, reverse=True)
-#     return sorted_pending_materials
+    return new_materials
 
 
 # Get Detailed Materi
@@ -94,11 +101,8 @@ async def get_detailed_materi(
     materialId: int, db: db_dependency, current_user: User = current_user_dependency
 ):
     is_valid = False
-    if current_user.user_type != 1:
-        if not utils.is_valid_Authorization(current_user.email):
-            raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin.")
-        else:
-            is_valid = True
+    if utils.is_valid_Authorization(current_user.email):
+        is_valid = True
 
     if not is_valid:
         material = (
@@ -110,21 +114,19 @@ async def get_detailed_materi(
         )
         if not material:
             raise HTTPException(status_code=404, detail="Materi tidak ditemukan.")
-
-        if (
-            material.author_id != current_user.user_id
-            and not utils.is_valid_Authorization(current_user.email)
-        ):
+        if material.approval_status != "APPROVED" and material.author_id != current_user.user_id:
             raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin.")
 
         return {"materi_item": material}
     else:
         materi = db.query(Material).filter(Material.material_id == materialId).first()
         if not materi:
-            raise HTTPException(status_code=404, detail="Latihan tidak ditemukan")
+            raise HTTPException(status_code=404, detail="Materi tidak ditemukan")
 
         user = db.query(User).filter(User.user_id == materi.author_id).first()
-        user_nip = db.query(Teacher).filter(Teacher.teacher_id == user.user_id).first().nip
+        user_nip = (
+            db.query(Teacher).filter(Teacher.teacher_id == user.user_id).first().nip
+        )
 
         detail = schemas.MaterialReview(
             material_id=materialId,
@@ -136,6 +138,7 @@ async def get_detailed_materi(
             author_nip=user_nip,
         )
         return {"materi_review": detail}
+
 
 @router.get("/{materialId}/content")
 async def view_content(materialId: int, db: db_dependency):
@@ -156,7 +159,7 @@ async def view_content(materialId: int, db: db_dependency):
 
 # Update Materi
 @router.put("/{materialId}", status_code=status.HTTP_200_OK)
-async def update_materi(
+async def update_my_materi(
     materialId: int,
     db: db_dependency,
     current_user: User = current_user_dependency,
@@ -215,7 +218,7 @@ async def update_materi(
         upload(unique_filename, content, True)
         material.filename = db_materi.filename
         material.media_type = db_materi.media_type
-    
+
     material.approval_status = "PENDING"
     material.updated_at = datetime.now()
     db.commit()
@@ -224,7 +227,7 @@ async def update_materi(
 
 # Delete Materi
 @router.delete("/{materialId}", status_code=status.HTTP_200_OK)
-async def delete_materi(
+async def delete_my_materi(
     materialId: int, db: db_dependency, current_user: User = current_user_dependency
 ):
     if current_user.user_type != 1:

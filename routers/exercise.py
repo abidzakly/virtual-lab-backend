@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 from ..schemas import schemas, utils
-from ..models.models import Exercise, Question, User, Teacher
+from ..models.models import Exercise, Question, User, Teacher, StudentExerciseResult
 from ..dependencies.dependencies import db_dependency, current_user_dependency
 from datetime import datetime
 
@@ -22,8 +22,12 @@ async def add_latihan(
 
     if latihan.question_count > 10:
         raise HTTPException(status_code=403, detail="Jumlah soal melebihi batas")
-    
-    if latihan.difficulty != "mudah" and latihan.difficulty != "sedang" and latihan.difficulty != "sulit":
+
+    if (
+        latihan.difficulty != "mudah"
+        and latihan.difficulty != "sedang"
+        and latihan.difficulty != "sulit"
+    ):
         raise HTTPException(status_code=403, detail="Tingkat kesulitan tidak valid")
 
     latihan.author_id = current_user.user_id
@@ -40,9 +44,9 @@ async def add_latihan(
     return latihan
 
 
-# Get All Latihan by Author
+# Get My Exercises
 @router.get("", status_code=status.HTTP_200_OK)
-async def get_all_latihan_by_author(
+async def get_my_exercises(
     db: db_dependency, current_user: User = current_user_dependency
 ):
     if current_user.user_type != 1:
@@ -99,63 +103,48 @@ async def add_soal(
     return {"message": "Soal telah ditambahkan", "status": True}
 
 
-# Get Soal by Exercise ID
-@router.get("/{exerciseId}/questions", status_code=status.HTTP_200_OK)
-async def get_soal_by_exercise_id(
-    exerciseId: int,
-    db: db_dependency,
-    current_user: User = current_user_dependency,
+# Get All Latihan
+@router.get("/approved", status_code=status.HTTP_200_OK)
+async def get_all_approved_exercise(
+    db: db_dependency, current_user: User = current_user_dependency
 ):
-    if current_user.user_type != 1:
-        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin.")
+    exercise = db.query(Exercise).filter(Exercise.approval_status == "APPROVED").all()
+    if not exercise:
+        raise HTTPException(status_code=404, detail="Materi tidak ditemukan")
 
-    soals = db.query(Question).filter(Question.exercise_id == exerciseId).all()
+    exercise_sorted = sorted(exercise, key=lambda x: x.created_at, reverse=True)
 
-    if not soals:
-        raise HTTPException(status_code=404, detail="Soal tidak ditemukan")
+    new_exercise = []
+    for item in exercise_sorted:
+        result = (
+            db.query(StudentExerciseResult)
+            .filter(
+                StudentExerciseResult.exercise_id == item.exercise_id,
+                StudentExerciseResult.student_id == current_user.user_id,
+            )
+            .first()
+        )
+        if not result:
+            modified_exercise = {
+                "exercise_id": item.exercise_id,
+                "title": item.title,
+                "difficulty": item.difficulty,
+            }
+            new_exercise.append(modified_exercise)
 
-    new_soal_list = []
-    for item in soals:
-        answer_key_count = len(item.answer_keys)
-        modified_soal = {
-            "exercise_id": item.exercise_id,
-            "question_text": item.question_text,
-            "answer_key_count": answer_key_count,
-            "question_id": item.question_id,
-            "option_text": item.option_text
-        }
-        new_soal_list.append(modified_soal)
-
-    return new_soal_list
-    # if soals[0].
-
-
-# # Get All Pending Latihan
-# @router.get("/pending", status_code=status.HTTP_200_OK)
-# async def get_pending_latihan(
-#     db: db_dependency, current_user: User = current_user_dependency
-# ):
-#     if not utils.is_valid_Authorization(current_user.email):
-#         raise HTTPException(status_code=401, detail="Akun ini tidak diberi ijin.")
-
-#     latihans = db.query(Exercise).filter(Exercise.approval_status == "PENDING").all()
-#     if not latihans:
-#         raise HTTPException(status_code=404, detail="Latihan tidak ditemukan")
-    
-#     sorted_exercises = sorted(latihans, key=lambda x: x.created_at, reverse=True)
-#     return sorted_exercises
+    return new_exercise
 
 
 # Get Detail Latihan
 @router.get("/{exerciseId}", status_code=status.HTTP_200_OK)
-async def get_detail_latihan(
+async def get_my_detail_latihan(
     exerciseId: int, db: db_dependency, current_user: User = current_user_dependency
 ):
     is_valid = False
     if current_user.user_type != 1:
         if not utils.is_valid_Authorization(current_user.email):
             raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin.")
-        else: 
+        else:
             is_valid = True
 
     if not is_valid:
@@ -178,7 +167,9 @@ async def get_detail_latihan(
             raise HTTPException(status_code=404, detail="Latihan tidak ditemukan")
 
         user = db.query(User).filter(User.user_id == latihan.author_id).first()
-        user_nip = db.query(Teacher).filter(Teacher.teacher_id == user.user_id).first().nip
+        user_nip = (
+            db.query(Teacher).filter(Teacher.teacher_id == user.user_id).first().nip
+        )
 
         detail = schemas.ExerciseReview(
             exercise_id=exerciseId,
@@ -186,9 +177,9 @@ async def get_detail_latihan(
             question_count=latihan.question_count,
             author_username=user.username,
             author_nip=user_nip,
-            difficulty=latihan.difficulty
+            difficulty=latihan.difficulty,
         )
-        return {"latihan_review": detail }
+        return {"latihan_review": detail}
 
 
 # Modify Exercise Status
@@ -237,17 +228,17 @@ async def modify_exercise_status(
 
 # Delete Latihan
 @router.delete("/{exerciseId}", status_code=status.HTTP_200_OK)
-async def delete_latihan(
+async def delete_my_latihan(
     exerciseId: int, db: db_dependency, current_user: User = current_user_dependency
 ):
     if current_user.user_type != 1:
         raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin.")
 
     latihan = db.query(Exercise).filter(Exercise.exercise_id == exerciseId).first()
-    
+
     if not latihan:
         raise HTTPException(status_code=404, detail="Latihan tidak ditemukan")
-    
+
     if latihan.author_id != current_user.user_id:
         raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin.")
 

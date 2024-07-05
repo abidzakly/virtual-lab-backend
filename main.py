@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from .database import database
-from .routers import materials, users, exercise, students, auth, introduction, test
+from .routers import materials, users, exercise, students, auth
 from .models import models
 from contextlib import asynccontextmanager
 import asyncio
@@ -32,9 +32,9 @@ app.include_router(users.router, prefix="/v1/users", tags=["users"])
 app.include_router(auth.router, prefix="/v1/auth", tags=["auth"])
 app.include_router(materials.router, prefix="/v1/materials", tags=["materials"])
 app.include_router(exercise.router, prefix="/v1/exercises", tags=["exercises"])
-app.include_router(students.router, prefix="/v1/users", tags=["students"])
-app.include_router(introduction.router, prefix="/v1/introduction", tags=["introduction"])
-app.include_router(test.router, prefix="/v1/test", tags=["Testing"])
+app.include_router(students.router, prefix="/v1", tags=["students"])
+# app.include_router(introduction.router, prefix="/v1/introduction", tags=["introduction"])
+# app.include_router(test.router, prefix="/v1/test", tags=["Testing"])
 
 @app.get("/")
 async def root():

@@ -146,19 +146,6 @@ class Question(QuestionBase):
     class Config:
         from_attributes = True
 
-# class OptionBase(BaseModel):
-#     option_text: List[str]
-
-# class OptionCreate(OptionBase):
-#     question_id: int
-
-# class Option(OptionBase):
-#     option_id: int
-#     question_id: int
-
-#     class Config:
-#         from_attributes = True
-
 class Answer(BaseModel):
     question_id: int
     selected_option: List[str]
@@ -168,30 +155,22 @@ class SubmitExerciseRequest(BaseModel):
 
 class AnswerResult(BaseModel):
     question_id: int
-    question: str
+    question_title: str
     selected_option: List[str]
     correct_option: List[str]
     correct: bool
 
-class SubmitExerciseResponse(BaseModel):
-    answer_results: List[AnswerResult]
-    score: float
-# -------------------------------------------
-class StudentExerciseResultBase(BaseModel):
-    score: float
-    completion_date: Optional[datetime] = datetime.now()
 
-class StudentExerciseResultCreate(StudentExerciseResultBase):
-    student_id: int
-    exercise_id: int
-
-class StudentExerciseResult(StudentExerciseResultBase):
+class StudentResult(BaseModel):
     result_id: int
-    student_id: int
-    exercise_id: int
+    title: str
+    difficulty: str
+    score: float
 
-    class Config:
-        from_attributes = True
+class StudentResultDetail(BaseModel):
+    answers_results: List[AnswerResult]
+    score: float
+
 
 class StudentAnswerBase(BaseModel):
     selected_option_id: int

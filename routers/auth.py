@@ -3,14 +3,14 @@ from ..schemas import schemas, utils
 from ..models import models
 from ..dependencies.dependencies import (
     db_dependency,
-    SECRET_KEY,
-    ALGORITHM,
-    ACCESS_TOKEN_EXPIRE_MINUTES,
+    # SECRET_KEY,
+    # ALGORITHM,
+    # ACCESS_TOKEN_EXPIRE_MINUTES,
     create_access_token,
-    create_refresh_token
+    # create_refresh_token
 )
-from datetime import timedelta
-from jose import JWTError, jwt
+# from datetime import timedelta
+# from jose import JWTError, jwt
 
 
 router = APIRouter()
@@ -19,8 +19,8 @@ router = APIRouter()
 # Register
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(
-    student: schemas.StudentCreate | None,
-    teacher: schemas.TeacherCreate | None,
+    student: schemas.StudentCreate,
+    teacher: schemas.TeacherCreate,
     user: schemas.UserCreate,
     db: db_dependency,
 ):
@@ -78,12 +78,12 @@ async def login(user: schemas.UserLogin, db: db_dependency):
 
     if db_user is None:
         raise HTTPException(
-            status_code=400, detail="Nama pengguna atau password salah! error 1"
+            status_code=400, detail="Nama pengguna atau password salah!"
         )
     
     if not utils.verify_password(user.password, db_user.password):
         raise HTTPException(
-            status_code=400, detail="Nama pengguna atau password salah! error 2"
+            status_code=400, detail="Nama pengguna atau password salah!"
         )
     
     if db_user.registration_status == "PENDING":
