@@ -1,17 +1,3 @@
 # Virtual-Lab-Backend
-## How To
-### Test Locally (or host and forward it with ngrok)
-**Make sure python is installed!**
-- Step 1: Open terminal (outside this folder). Then, 
-Type and Enter the following instructions below:
-- Step 2: "python -m venv ***your virtual env name***".
-- Step 3: ".\***your virtual env name***\Scripts\Activate".
-- Step 4: "pip install fastapi uvicorn sqlalchemy pymysql".
-- Step 5: Type "uvicorn virtual-lab-backend.main:app --reload".
-- Done
-
-### Go to http://127.0.0.1:8000/docs/ for Api Docs.
-- You can also use Postman for testing.
-## P.S.
-- Make sure MySQL is turned on. (use xampp, laragon, any)
-- Create a database/schema with a name ***virtualab*** for running it the first time.
+- Made with FastAPI, SQL Alchemy & PyMySQL
+- Use **uvicorn main:app --reload** to run
