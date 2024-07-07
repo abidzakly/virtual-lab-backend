@@ -133,7 +133,7 @@ def compress_video(input_path: str, output_path: str):
     command = [
         "ffmpeg",
         "-i", input_path,
-        "-vcodec", "libx264",
+        "-vcodec", "libx265",
         "-preset", "ultrafast",
         "-crf", "33",  # Constant Rate Factor, adjust as needed for quality vs. speed
         "-threads", "4",  # Adjust number of threads based on your CPU capabilities
