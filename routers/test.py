@@ -6,7 +6,6 @@ from ..ftp import upload, download
 # from ..dependencies.dependencies import db_dependency, introduction_dependency, current_user_dependency
 # import uuid
 # import os
-# import moviepy.editor as mp
 # import tempfile
 # import ffmpeg
 # from datetime import datetime
@@ -85,24 +84,12 @@ from ..ftp import upload, download
 # #     os.remove(compressed_file_path)
 from fastapi import APIRouter, File, UploadFile, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
-import moviepy.editor as mp
+from ..schemas import utils
 from io import BytesIO
 import os
 
 router = APIRouter()
 
-
-def compress_video(input_path: str, output_path: str, target_size: int):
-    clip = mp.VideoFileClip(input_path)
-    width, height = clip.size
-
-    # Determine whether to base the resizing on width or height
-    if width > height:  # Landscape
-        clip_resized = clip.resize(width=target_size)
-    else:  # Portrait
-        clip_resized = clip.resize(height=target_size)
-    
-    clip_resized.write_videofile(output_path, codec='libx264', audio_codec='aac')
 
 @router.post("/compress-video/")
 async def compress_video_endpoint(file: UploadFile = File(...)):
@@ -112,12 +99,10 @@ async def compress_video_endpoint(file: UploadFile = File(...)):
     with open(input_path, "wb") as buffer:
         buffer.write(await file.read())
 
-    # Compress the video to the target size (longer side 1280 pixels)
-    target_size = 1280
-    compress_video(input_path, output_path, target_size)
-    upload(content=open(output_path, "rb").read(), filename=output_path)
-        # os.remove(input_path)
-        # os.remove(output_path)
+    utils.compress_video(input_path, output_path)
+    if upload(content=open(output_path, "rb").read(), filename=output_path):
+        os.remove(output_path)
+        os.remove(input_path)
 
     return {"message": "success"}
 

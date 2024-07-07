@@ -9,7 +9,6 @@ from PIL import Image
 from fastapi import HTTPException
 import cv2
 import tempfile
-import moviepy.editor as mp
 
 dotenv.load_dotenv()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -97,11 +96,11 @@ def get_pending_posts(
     return sorted_pending_posts
 
 
-def compress_video(
-    input_path: str, output_path: str, target_size: int = 10 * 1024 * 1024
-):
-    clip = mp.VideoFileClip(input_path)
-    clip.write_videofile(output_path, bitrate="500k", codec="libx264")
+# def compress_video(
+#     input_path: str, output_path: str, target_size: int = 10 * 1024 * 1024
+# ):
+#     clip = mp.VideoFileClip(input_path)
+#     clip.write_videofile(output_path, bitrate="500k", codec="libx264")
 
 
 def get_thumbnail(video_bytes: bytes) -> bytes:
@@ -134,7 +133,7 @@ def compress_video(input_path: str, output_path: str):
     command = [
         "ffmpeg",
         "-i", input_path,
-        "-vcodec", "libx265",
+        "-vcodec", "libx264",
         "-preset", "ultrafast",
         "-crf", "33",  # Constant Rate Factor, adjust as needed for quality vs. speed
         "-threads", "4",  # Adjust number of threads based on your CPU capabilities

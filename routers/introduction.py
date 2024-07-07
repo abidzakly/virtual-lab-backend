@@ -7,7 +7,6 @@ from ..dependencies.dependencies import db_dependency, current_user_dependency
 from io import BytesIO
 import uuid
 import os
-import moviepy.editor as mp
 import tempfile
 import mimetypes
 from datetime import datetime

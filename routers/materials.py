@@ -8,7 +8,6 @@ from ..ftp import upload, download, delete
 from io import BytesIO
 import uuid
 import os
-import moviepy.editor as mp
 import tempfile
 import mimetypes
 from datetime import datetime
