@@ -62,7 +62,7 @@ async def register(
         db.refresh(new_student)
 
     return {
-        "message": "Register berhasil. Harap tunggu aktivasi admin.",
+        "message": "Register berhasil! Harap tunggu aktivasi admin.",
         "status": True,
     }
 
@@ -103,13 +103,15 @@ async def login(user: schemas.UserLogin, db: db_dependency):
         if db_user.user_type == 0
         else None
     )
-
+    
+    intro_title = db.query(models.PengenalanReaksi).first().title
     access_token = create_access_token(data={"sub": db_user.username})
     # refresh_token = create_refresh_token(data={"sub": db_user.username})
 
     return {
         "access_token": access_token,
         # "refresh_token": refresh_token,
+        "intro_title": intro_title,
         "user": db_user,
         "student": student,
         "teacher": teacher,

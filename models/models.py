@@ -51,7 +51,8 @@ class Exercise(Base):
     question_count = Column(Integer, nullable=False)
     author_id = Column(Integer, ForeignKey('Users.user_id'))
     approval_status = Column(Enum('PENDING', 'APPROVED', 'REJECTED', 'DRAFT'), default='PENDING')
-    author = relationship("User", backref="exercises")
+    questions = relationship("Question", backref="exercise", cascade="all, delete-orphan", passive_deletes=True)
+    author = relationship("User", backref="exercise")
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
     updated_at = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
 
@@ -63,7 +64,7 @@ class Question(Base):
     question_text = Column(Text, nullable=False)
     option_text = Column(JSON, nullable=False)
     answer_keys = Column(JSON, nullable=False)
-    exercise = relationship("Exercise", backref="questions")
+    # exercise = relationship("Exercise", backref="question")
 
 # class Option(Base):
 #     __tablename__ = 'Options'

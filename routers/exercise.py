@@ -15,20 +15,20 @@ async def add_latihan(
     current_user: User = current_user_dependency,
 ):
     if current_user.user_type != 1:
-        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin.")
+        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
 
     if latihan.question_count <= 0:
-        raise HTTPException(status_code=403, detail="Jumlah soal harus lebih dari 0")
+        raise HTTPException(status_code=403, detail="Jumlah soal harus lebih dari 0!")
 
     if latihan.question_count > 10:
-        raise HTTPException(status_code=403, detail="Jumlah soal melebihi batas")
+        raise HTTPException(status_code=403, detail="Jumlah soal melebihi batas!")
 
     if (
-        latihan.difficulty != "mudah"
-        and latihan.difficulty != "sedang"
-        and latihan.difficulty != "sulit"
+        latihan.difficulty.lower() != "mudah"
+        and latihan.difficulty.lower() != "sedang"
+        and latihan.difficulty.lower() != "sulit"
     ):
-        raise HTTPException(status_code=403, detail="Tingkat kesulitan tidak valid")
+        raise HTTPException(status_code=403, detail="Tingkat kesulitan tidak valid!")
 
     latihan.author_id = current_user.user_id
     new_latihan = Exercise(**latihan.model_dump())
@@ -41,7 +41,7 @@ async def add_latihan(
         .filter(Exercise.exercise_id == new_latihan.exercise_id)
         .first()
     )
-    return latihan
+    return {"message": "Berhasil menambahkan!", "status": True, "data": latihan.exercise_id}
 
 
 # Get My Exercises
@@ -50,13 +50,13 @@ async def get_my_exercises(
     db: db_dependency, current_user: User = current_user_dependency
 ):
     if current_user.user_type != 1:
-        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin.")
+        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
 
     latihans = (
         db.query(Exercise).filter(Exercise.author_id == current_user.user_id).all()
     )
     if not latihans:
-        raise HTTPException(status_code=404, detail="Latihan tidak ditemukan")
+        raise HTTPException(status_code=404, detail="Latihan tidak ditemukan!")
 
     sorted_exercises = sorted(latihans, key=lambda x: x.created_at, reverse=True)
     return sorted_exercises
@@ -71,15 +71,15 @@ async def add_soal(
     current_user: User = current_user_dependency,
 ):
     if current_user.user_type != 1:
-        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin.")
+        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
 
     db_exercise = db.query(Exercise).filter(Exercise.exercise_id == exerciseId).first()
 
     if not db_exercise:
-        raise HTTPException(status_code=404, detail="Latihan tidak ditemukan")
+        raise HTTPException(status_code=404, detail="Latihan tidak ditemukan!")
 
     if db_exercise.author_id != current_user.user_id:
-        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin.")
+        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
 
     soal_existed = db.query(Question).filter(Question.exercise_id == exerciseId).count()
     new_soal_list = []
@@ -92,7 +92,7 @@ async def add_soal(
     if len(new_soal_list) > db_exercise.question_count or len(new_soal_list) > (
         db_exercise.question_count - soal_existed
     ):
-        raise HTTPException(status_code=403, detail="Jumlah soal melebihi batas")
+        raise HTTPException(status_code=403, detail="Jumlah soal melebihi batas!")
 
     db_exercise.approval_status = "PENDING"
     db_exercise.updated_at = datetime.now()
@@ -100,7 +100,7 @@ async def add_soal(
 
     for new_soal in new_soal_list:
         db.refresh(new_soal)
-    return {"message": "Soal telah ditambahkan", "status": True}
+    return {"message": "Soal berhasil ditambahkan!", "status": True}
 
 
 # Get All Latihan
@@ -110,7 +110,7 @@ async def get_all_approved_exercise(
 ):
     exercise = db.query(Exercise).filter(Exercise.approval_status == "APPROVED").all()
     if not exercise:
-        raise HTTPException(status_code=404, detail="Materi tidak ditemukan")
+        raise HTTPException(status_code=404, detail="Materi tidak ditemukan!")
 
     exercise_sorted = sorted(exercise, key=lambda x: x.created_at, reverse=True)
 
@@ -143,20 +143,20 @@ async def get_my_detail_latihan(
     is_valid = False
     if current_user.user_type != 1:
         if not utils.is_valid_Authorization(current_user.email):
-            raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin.")
+            raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
         else:
             is_valid = True
 
     if not is_valid:
         latihan = db.query(Exercise).filter(Exercise.exercise_id == exerciseId).first()
         if not latihan:
-            raise HTTPException(status_code=404, detail="Latihan tidak ditemukan")
+            raise HTTPException(status_code=404, detail="Latihan tidak ditemukan!")
 
         if (
             latihan.author_id != current_user.user_id
             and not utils.is_valid_Authorization(current_user.email)
         ):
-            raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin.")
+            raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
 
         soal = db.query(Question).filter(Question.exercise_id == exerciseId).all()
 
@@ -164,7 +164,7 @@ async def get_my_detail_latihan(
     else:
         latihan = db.query(Exercise).filter(Exercise.exercise_id == exerciseId).first()
         if not latihan:
-            raise HTTPException(status_code=404, detail="Latihan tidak ditemukan")
+            raise HTTPException(status_code=404, detail="Latihan tidak ditemukan!")
 
         user = db.query(User).filter(User.user_id == latihan.author_id).first()
         user_nip = (
@@ -196,22 +196,22 @@ async def modify_exercise_status(
         is_valid = True
     else:
         # if current_user.user_type != 1:
-        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin.")
+        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
 
     latihan = db.query(Exercise).filter(Exercise.exercise_id == exerciseId).first()
     if not latihan:
-        raise HTTPException(status_code=404, detail="Latihan tidak ditemukan")
+        raise HTTPException(status_code=404, detail="Latihan tidak ditemukan!")
 
     if status == "APPROVED":
         if not is_valid:
-            raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin.")
+            raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
         latihan.approval_status = status
         latihan.updated_at = datetime.now()
         db.commit()
         return {"message": "Latihan berhasil di terima!", "status": True}
     elif status == "REJECTED":
         if not is_valid:
-            raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin.")
+            raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
         latihan.approval_status = status
         latihan.updated_at = datetime.now()
         db.commit()
@@ -223,7 +223,7 @@ async def modify_exercise_status(
     #     db.commit()
     #     return {"message": "Status latihan berhasil di update!", "status": True}
     else:
-        raise HTTPException(status_code=400, detail="Status tidak valid")
+        raise HTTPException(status_code=400, detail="Status tidak valid!")
 
 
 # Delete Latihan
@@ -232,7 +232,7 @@ async def delete_my_latihan(
     exerciseId: int, db: db_dependency, current_user: User = current_user_dependency
 ):
     if current_user.user_type != 1:
-        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin.")
+        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
 
     latihan = db.query(Exercise).filter(Exercise.exercise_id == exerciseId).first()
 
@@ -240,8 +240,8 @@ async def delete_my_latihan(
         raise HTTPException(status_code=404, detail="Latihan tidak ditemukan")
 
     if latihan.author_id != current_user.user_id:
-        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin.")
+        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
 
     db.delete(latihan)
     db.commit()
-    return {"message": "Latihan di hapus", "status": True}
+    return {"message": "Latihan berhasil di hapus!", "status": True}

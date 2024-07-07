@@ -24,7 +24,7 @@ async def submit_student_answers(
     current_user: User = current_user_dependency,
 ):
     if current_user.user_type != 0:
-        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin.")
+        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
     # Check if answers already submitted
     results = (
         db.query(StudentExerciseResult)
@@ -37,13 +37,13 @@ async def submit_student_answers(
 
     if results:
         raise HTTPException(
-            status_code=403, detail="Anda sudah menyelesaikan latihan ini."
+            status_code=403, detail="Anda sudah menyelesaikan latihan ini!"
         )
 
     # Get the exercise and questions
     exercise = db.query(Exercise).filter(Exercise.exercise_id == exerciseId).first()
     if not exercise:
-        raise HTTPException(status_code=404, detail="Latihan tidak ditemukan.")
+        raise HTTPException(status_code=404, detail="Latihan tidak ditemukan!")
 
     questions = db.query(Question).filter(Question.exercise_id == exerciseId).all()
 
@@ -108,7 +108,7 @@ async def submit_student_answers(
     db.commit()
 
     return {
-        "message": "Latihan berhasil diselesaikan",
+        "message": "Latihan berhasil diselesaikan!",
         "status": True,
         "data": result.result_id,
     }
@@ -122,20 +122,20 @@ async def get_soal_for_practice(
     current_user: User = current_user_dependency,
 ):
     if current_user.user_type != 0:
-        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin.")
+        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
 
     latihan_check = (
         db.query(Exercise).filter(Exercise.exercise_id == exerciseId).first()
     )
     if latihan_check.approval_status != "APPROVED":
         raise HTTPException(
-            status_code=403, detail="Latihan ini tidak memenuhi kriteria."
+            status_code=403, detail="Latihan ini tidak memenuhi kriteria!"
         )
 
     soals = db.query(Question).filter(Question.exercise_id == exerciseId).all()
 
     if not soals:
-        raise HTTPException(status_code=404, detail="Soal tidak ditemukan")
+        raise HTTPException(status_code=404, detail="Soal tidak ditemukan!")
 
     new_soal_list = []
     for item in soals:
@@ -162,7 +162,7 @@ async def get_my_results(
         .filter(StudentExerciseResult.student_id == current_user.user_id).all()
     )
     if not results:
-        raise HTTPException(status_code=404, detail="Hasil tidak ditemukan.")
+        raise HTTPException(status_code=404, detail="Hasil tidak ditemukan!")
         
     sorted_results = sorted(results, key=lambda x: x.completion_date, reverse=True)
     
@@ -194,10 +194,10 @@ async def get_my_result_detail(
         .first()
     )
     if not results:
-        raise HTTPException(status_code=404, detail="Hasil tidak ditemukan.")
+        raise HTTPException(status_code=404, detail="Hasil tidak ditemukan!")
     
     if results.student_id != current_user.user_id:
-        raise HTTPException(status_code=403, detail="Anda tidak diberi ijin.")
+        raise HTTPException(status_code=403, detail="Anda tidak diberi ijin!")
     
     answers = (
         db.query(StudentAnswer)
@@ -206,7 +206,7 @@ async def get_my_result_detail(
     )
     
     if not answers:
-        raise HTTPException(status_code=404, detail="Jawaban tidak ditemukan.")
+        raise HTTPException(status_code=404, detail="Jawaban tidak ditemukan!")
 
     answer_results = []
     for answer in answers:

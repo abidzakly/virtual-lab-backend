@@ -54,7 +54,7 @@ def verify_token(token: str, credentials_exception):
             raise credentials_exception
         token_data = schemas.TokenData(username=username)
     except ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token telah expired.")
+        raise HTTPException(status_code=401, detail="Token telah expired!")
     except JWTError:
         raise credentials_exception
     return token_data
@@ -63,7 +63,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)
                      , db: Session = Depends(get_db)
                      ):
     credentials_exception = HTTPException(
-        status_code=401, detail="Tidak dapat mengenali akun."
+        status_code=401, detail="Tidak dapat mengenali akun!"
     )
     token_data = verify_token(token, credentials_exception)   
     user = db.query(models.User).filter(models.User.username == token_data.username).first()
@@ -75,7 +75,7 @@ def get_token_data_for_video(token: str = Depends(oauth2_scheme)
                      , db: Session = Depends(get_db)
                      ):
     credentials_exception = HTTPException(
-        status_code=401, detail="Tidak dapat mengenali akun."
+        status_code=401, detail="Tidak dapat mengenali akun!"
     )
     token_data = verify_token(token, credentials_exception)
     return token_data

@@ -137,7 +137,7 @@ class QuestionBase(BaseModel):
     answer_keys: List[str]
 
 class QuestionCreate(QuestionBase):
-    exercise_id: int
+    exercise_id: Optional[int] = 0 
 
 class Question(QuestionBase):
     question_id: int
