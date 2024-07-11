@@ -20,5 +20,4 @@ meta = MetaData()
 
 conn = engine.connect()
 
-
 Base = declarative_base()

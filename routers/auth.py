@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
+from datetime import datetime
 from ..schemas import schemas, utils
 from ..models import models
 from ..dependencies.dependencies import (
@@ -24,6 +25,29 @@ async def register(
     user: schemas.UserCreate,
     db: db_dependency,
 ):
+    if len(user.full_name) > 60:
+        raise HTTPException(status_code=400, detail="Nama Lengkap tidak boleh lebih dari 60 karakter!")
+
+    if user.user_type == 1 and teacher.nip is not None:
+        if teacher.nip.isnumeric() is False:
+            raise HTTPException(status_code=400, detail="NIP harus berupa angka!")
+        elif len(teacher.nip) != 9 and len(teacher.nip) != 18:
+            raise HTTPException(
+                status_code=400, detail="NIP hanya boleh memuat 9 atau 18 angka!"
+            )
+
+    if user.email.find("@") == -1 or user.email.find(".") == -1:
+        raise HTTPException(status_code=400, detail="Format email tidak benar!")
+
+    if user.user_type == 0 and student.nisn is not None:
+        if student.nisn.isnumeric() is False:
+            raise HTTPException(status_code=400, detail="NISN harus berupa angka!")
+        elif len(student.nisn) != 10:
+            raise HTTPException(status_code=400, detail="NISN hanya boleh memuat 10 angka!")
+
+    if len(user.username) < 8 or len(user.username) > 20:
+        raise HTTPException(status_code=400, detail="Username harus memuat 8-20 karakter!")
+
     check_username = (
         db.query(models.User).filter(models.User.username == user.username).first()
     )
@@ -45,18 +69,29 @@ async def register(
     )
     if check_nisn:
         raise HTTPException(status_code=403, detail="NISN sudah terdaftar!")
-    new_user = models.User(**user.model_dump())
-    db.add(new_user)
+    
+    model_user = models.User(
+        username=user.username,
+        email=user.email,
+        user_type=user.user_type,
+        full_name=user.full_name,
+        school=user.school,
+        registration_status="PENDING",
+        registration_date=datetime.now(),
+        updated_at=datetime.now(),
+    )
+ 
+    db.add(model_user)
     db.commit()
-    db.refresh(new_user)
+    db.refresh(model_user)
 
-    if new_user.user_type == 1:
-        new_teacher = models.Teacher(teacher_id=new_user.user_id, nip=teacher.nip)
+    if model_user.user_type == 1:
+        new_teacher = models.Teacher(teacher_id=model_user.user_id, nip=teacher.nip)
         db.add(new_teacher)
         db.commit()
         db.refresh(new_teacher)
     else:
-        new_student = models.Student(student_id=new_user.user_id, nisn=student.nisn)
+        new_student = models.Student(student_id=model_user.user_id, nisn=student.nisn)
         db.add(new_student)
         db.commit()
         db.refresh(new_student)
@@ -104,7 +139,11 @@ async def login(user: schemas.UserLogin, db: db_dependency):
         else None
     )
     
-    intro_title = db.query(models.PengenalanReaksi).first().title
+    intro_title = db.query(models.PengenalanReaksi).first()
+    if intro_title is None:
+        intro_title = "Pengenalan Reaksi"
+    else:
+        intro_title = intro_title.title
     access_token = create_access_token(data={"sub": db_user.username})
     # refresh_token = create_refresh_token(data={"sub": db_user.username})
 

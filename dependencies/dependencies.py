@@ -1,10 +1,11 @@
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt, ExpiredSignatureError
-from typing import Annotated
+from typing import Annotated, Generator, AsyncGenerator
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from typing import Optional
+from ftplib import FTP
 import os, dotenv
 
 from ..database.database import SessionLocal
@@ -25,6 +26,19 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+async def get_async_db() -> AsyncGenerator:
+    async with SessionLocal() as session:
+        yield session
+
+def get_ftp_connection() -> Generator:
+    ftp = FTP(os.getenv("FTP_HOST"))
+    ftp.login(user=os.getenv("FTP_USER"), passwd=os.getenv("FTP_PASS"))
+    try:
+        yield ftp
+    finally:
+        ftp.quit()
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -83,3 +97,5 @@ def get_token_data_for_video(token: str = Depends(oauth2_scheme)
 current_user_dependency = Depends(get_current_user)
 introduction_dependency = Depends(get_token_data_for_video)
 db_dependency = Annotated[Session, Depends(get_db)]
+ftp_connection = Depends(get_ftp_connection)
+async_db_dependency = Annotated[AsyncGenerator, Depends(get_async_db)]

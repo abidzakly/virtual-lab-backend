@@ -6,7 +6,7 @@ class RecentPostData(BaseModel):
     title: str
     description: Optional[str] = None
     approval_status: str
-    created_at: datetime
+    updated_at: datetime
     post_type: str
     post_id: int
 
@@ -14,7 +14,7 @@ class PendingPostData(BaseModel):
     author_username: str
     post_id: int
     post_type: str
-    created_at: datetime
+    updated_at: datetime
 
 class ExerciseReview(BaseModel):
     title: str
@@ -33,6 +33,21 @@ class MaterialReview(BaseModel):
     author_username: str
     author_nip: str
 
+class ArticleReview(BaseModel):
+    title: str
+    filename: str
+    description: str
+    article_id: int
+    author_username: str
+    author_nip: str
+
+class ArticleView(BaseModel):
+    title: str
+    author_name: str
+    description: str
+    updated_at: datetime
+    article_id: int
+
 class TokenData(BaseModel):
     username: Optional[str] = None
 
@@ -40,10 +55,7 @@ class UserBase(BaseModel):
     full_name: str
     username: str
     user_type: int
-    registration_status: Optional[str] = 'PENDING'
     school: str
-    registration_date: Optional[datetime] = datetime.now()
-    updated_at: Optional[datetime] = datetime.now()
 
 class UserCreate(UserBase):
     email: EmailStr
@@ -59,8 +71,8 @@ class UserLogin(BaseModel):
     password: str
 
 class UserUpdate(BaseModel):
-    email: EmailStr
-    password: Optional[str] = None
+    new_email: EmailStr
+    new_password: str
     updated_at: Optional[datetime] = datetime.now()
 
 class CombinedUser(BaseModel):
@@ -124,6 +136,10 @@ class ExerciseBase(BaseModel):
 class ExerciseCreate(ExerciseBase):
     author_id: Optional[int] = None
 
+class ExerciseUpdate(BaseModel):
+    title: str
+    difficulty: str
+
 class Exercise(ExerciseBase):
     exercise_id: int
     author_id: int
@@ -138,6 +154,9 @@ class QuestionBase(BaseModel):
 
 class QuestionCreate(QuestionBase):
     exercise_id: Optional[int] = 0 
+
+class QuestionUpdate(QuestionBase):
+    question_id: int
 
 class Question(QuestionBase):
     question_id: int

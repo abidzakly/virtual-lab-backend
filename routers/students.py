@@ -6,7 +6,6 @@ from ..models.models import (
     Question,
     Exercise,
     User,
-    Material,
 )
 from ..dependencies.dependencies import db_dependency, current_user_dependency
 from datetime import datetime
@@ -220,5 +219,4 @@ async def get_my_result_detail(
                 correct=answer.is_correct,
             )
         )
-    # return answer_results
     return schemas.StudentResultDetail(answers_results=answer_results, score=results.score)

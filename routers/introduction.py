@@ -25,6 +25,9 @@ async def add_test(
     if not utils.is_valid_Authorization(current_user.email):
         raise HTTPException(status_code=401, detail="Akun ini tidak diberi ijin!")
     
+    if file.content_type not in utils.allowed_video_mime_types:
+        raise HTTPException(status_code=403, detail="File harus bertipe video, yaa")
+    
     file_extension = file.filename.split(".")[-1]
     unique_filename = f"{uuid.uuid4().hex[:5]}.{file_extension}"
 
@@ -34,6 +37,9 @@ async def add_test(
         input_file.write(await file.read())
         input_file_path = input_file.name
     compressed_file_path = f"{tempfile.gettempdir()}/compressed_{unique_filename}"
+
+    if not utils.check_video_size_limit(input_file_path):
+        raise HTTPException(status_code=400, detail="Ukuran file melebihi batas maksimum 150 MB!")
 
     utils.compress_video(input_file_path, compressed_file_path)
     
@@ -104,6 +110,9 @@ async def update_introduction(
             input_file_path = input_file.name
         compressed_file_path = f"{tempfile.gettempdir()}/compressed_{unique_filename}"
 
+        if not utils.check_video_size_limit(input_file_path):
+            raise HTTPException(status_code=400, detail="Ukuran file melebihi batas maksimum 150 MB!")
+
         utils.compress_video(input_file_path, compressed_file_path)
         
         with open(compressed_file_path, "rb") as buffer:
@@ -146,9 +155,9 @@ async def delete_introduction(
         raise HTTPException(status_code=401, detail="Akun ini tidak diberi ijin!")
 
     introduction = db.query(PengenalanReaksi).first()
-    delete(introduction.filename)
     db.delete(introduction)
     db.commit()
+    delete(introduction.filename)
     return {"message": "Berhasil dihapus!", "status": True}
 
 

@@ -39,6 +39,9 @@ async def add_materi(
                 input_file.write(await file.read())
                 input_file_path = input_file.name
             compressed_file_path = f"{tempfile.gettempdir()}/compressed_{unique_filename}"
+            
+            if not utils.check_video_size_limit(input_file_path):
+                raise HTTPException(status_code=400, detail="Ukuran file melebihi batas maksimum 150 MB!")
 
             utils.compress_video(input_file_path, compressed_file_path)
             
@@ -51,7 +54,7 @@ async def add_materi(
 
         if media_type != "image":
             if media_type != "video":
-                raise HTTPException(status_code=400, detail="Media type tidak valid!")
+                raise HTTPException(status_code=400, detail="Tipe file tidak valid!")
         
         db_materi = Material(
             title=title,
@@ -67,7 +70,7 @@ async def add_materi(
         db.add(db_materi)
         db.commit()
         db.refresh(db_materi)
-        upload(unique_filename, content, True)
+        upload(unique_filename, content, isTeacher=True)
         return {"message": "Materi telah ditambahkan!", "status": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -87,7 +90,7 @@ async def get_my_materials(
     if not materials:
         raise HTTPException(status_code=404, detail="Materi tidak ditemukan!")
 
-    sorted_materials = sorted(materials, key=lambda x: x.created_at, reverse=True)
+    sorted_materials = sorted(materials, key=lambda x: x.updated_at, reverse=True)
     return sorted_materials
 
 
@@ -100,7 +103,7 @@ async def get_all_approved_materials(
     if not materials:
         raise HTTPException(status_code=404, detail="Materi tidak ditemukan!")
     
-    material_sorted = sorted(materials, key=lambda x: x.created_at, reverse=True)
+    material_sorted = sorted(materials, key=lambda x: x.updated_at, reverse=True)
     
     new_materials = []
     for item in material_sorted:
@@ -116,7 +119,7 @@ async def get_all_approved_materials(
 
 # Get Detailed Materi
 @router.get("/{materialId}", status_code=status.HTTP_200_OK)
-async def get_detailed_materi(
+async def get_materi_detail(
     materialId: int, db: db_dependency, current_user: User = current_user_dependency
 ):
     is_valid = False
@@ -169,7 +172,7 @@ async def view_content(materialId: int, db: db_dependency):
         .first()
     )
     try:
-        content = download(material.filename, True)
+        content = download(material.filename, isTeacher=True)
         media_type, _ = mimetypes.guess_type(material.filename)
         return StreamingResponse(BytesIO(content), media_type=media_type)
     except Exception as e:
@@ -218,6 +221,9 @@ async def update_my_materi(
                 input_file_path = input_file.name
             compressed_file_path = f"{tempfile.gettempdir()}/compressed_{unique_filename}"
 
+            if not utils.check_video_size_limit(input_file_path):
+                raise HTTPException(status_code=400, detail="Ukuran file melebihi batas maksimum 150 MB!")
+            
             utils.compress_video(input_file_path, compressed_file_path)
 
             with open(compressed_file_path, "rb") as buffer:
@@ -250,8 +256,8 @@ async def update_my_materi(
             raise HTTPException(
                 status_code=400, detail="Anda tidak menyertakan tipe file!"
             )
-        delete(material.filename, True)
-        upload(unique_filename, content, True)
+        delete(material.filename, isTeacher=True)
+        upload(unique_filename, content, isTeacher=True)
         material.filename = db_materi.filename
         material.media_type = db_materi.media_type
 
@@ -277,8 +283,8 @@ async def delete_my_materi(
         raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
 
     db.delete(material)
-    delete(material.filename, True)
     db.commit()
+    delete(material.filename, True)
     return {"message": "Materi berhasil dihapus!", "status": True}
 
 
@@ -295,7 +301,6 @@ async def modify_material_status(
     if utils.is_valid_Authorization(current_user.email):
         is_valid = True
     else:
-        # if current_user.user_type != 1:
         raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
 
     material = db.query(Material).filter(Material.material_id == materialId).first()
@@ -316,12 +321,6 @@ async def modify_material_status(
         material.updated_at = datetime.now()
         db.commit()
         return {"message": "Materi berhasil di tolak!", "status": True}
-    # elif status == "PENDING":
-    #     if material.author_id != current_user.user_id:
-    #         raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin.")
-    #     material.approval_status = status
-    #     db.commit()
-    #     return {"message": "Status materi berhasil di update!", "status": True}
     else:
         raise HTTPException(status_code=400, detail="Status tidak valid!")
 
@@ -329,7 +328,7 @@ async def modify_material_status(
 async def get_video_thumbnail(materialId: int, db: db_dependency):
     materi_content = db.query(Material).filter(Material.material_id == materialId).first()
     try:
-        content = download(materi_content.filename, True)
+        content = download(materi_content.filename, isTeacher=True)
         thumbnail = utils.get_thumbnail(content)
         return StreamingResponse(BytesIO(thumbnail), media_type="image/jpeg")
     except Exception as e:

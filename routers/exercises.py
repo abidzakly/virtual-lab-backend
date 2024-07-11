@@ -41,7 +41,8 @@ async def add_latihan(
         .filter(Exercise.exercise_id == new_latihan.exercise_id)
         .first()
     )
-    return {"message": "Berhasil menambahkan!", "status": True, "data": latihan.exercise_id}
+    return {"message": "Latihan berhasil ditambahkan!", "status": True, "data": latihan.exercise_id }
+
 
 
 # Get My Exercises
@@ -58,8 +59,9 @@ async def get_my_exercises(
     if not latihans:
         raise HTTPException(status_code=404, detail="Latihan tidak ditemukan!")
 
-    sorted_exercises = sorted(latihans, key=lambda x: x.created_at, reverse=True)
+    sorted_exercises = sorted(latihans, key=lambda x: x.updated_at, reverse=True)
     return sorted_exercises
+
 
 
 # Upload Soal
@@ -103,6 +105,48 @@ async def add_soal(
     return {"message": "Soal berhasil ditambahkan!", "status": True}
 
 
+
+# Update Soal
+@router.put("/{exerciseId}/questions", status_code=status.HTTP_200_OK)
+async def update_soal(
+    exerciseId: int,
+    soal: list[schemas.QuestionUpdate],
+    db: db_dependency,
+    current_user: User = current_user_dependency,
+):
+    if current_user.user_type != 1:
+        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
+    
+    exercise = db.query(Exercise).filter(Exercise.exercise_id == exerciseId).first()
+    
+    if not exercise:
+        raise HTTPException(status_code=404, detail="Latihan tidak ditemukan!")
+    
+    if exercise.author_id != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
+    
+    db_soal = db.query(Question).filter(Question.exercise_id == exerciseId)
+
+    new_soal_list = []
+    for new_soal in db_soal.all():
+        for item in soal:
+            if (new_soal.question_id == item.question_id):
+                new_soal.question_text = item.question_text
+                new_soal.answer_keys = item.answer_keys
+                new_soal.option_text = item.option_text
+                db.add(new_soal)
+                new_soal_list.append(new_soal)
+
+    exercise.updated_at = datetime.now()
+    exercise.approval_status = "PENDING"
+    db.commit()
+
+    for updated_soal in new_soal_list:
+        db.refresh(updated_soal)
+    return {"message": "Soal berhasil diperbarui!", "status": True}
+
+
+
 # Get All Latihan
 @router.get("/approved", status_code=status.HTTP_200_OK)
 async def get_all_approved_exercise(
@@ -112,7 +156,7 @@ async def get_all_approved_exercise(
     if not exercise:
         raise HTTPException(status_code=404, detail="Materi tidak ditemukan!")
 
-    exercise_sorted = sorted(exercise, key=lambda x: x.created_at, reverse=True)
+    exercise_sorted = sorted(exercise, key=lambda x: x.updated_at, reverse=True)
 
     new_exercise = []
     for item in exercise_sorted:
@@ -133,6 +177,7 @@ async def get_all_approved_exercise(
             new_exercise.append(modified_exercise)
 
     return new_exercise
+
 
 
 # Get Detail Latihan
@@ -158,9 +203,20 @@ async def get_my_detail_latihan(
         ):
             raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
 
+        
+        is_results_exist = False
+        
+        check_existing_results = db.query(StudentExerciseResult).filter(
+            StudentExerciseResult.exercise_id == exerciseId
+        ).first()
+
+        if check_existing_results:
+            is_results_exist = True
+
+
         soal = db.query(Question).filter(Question.exercise_id == exerciseId).all()
 
-        return {"latihan": latihan, "soal": soal}
+        return {"latihan": latihan, "soal": soal, "is_results_exist": is_results_exist}
     else:
         latihan = db.query(Exercise).filter(Exercise.exercise_id == exerciseId).first()
         if not latihan:
@@ -180,6 +236,71 @@ async def get_my_detail_latihan(
             difficulty=latihan.difficulty,
         )
         return {"latihan_review": detail}
+
+
+
+# Update Latihan
+@router.put("/{exerciseId}", status_code=status.HTTP_200_OK)
+async def update_latihan(
+    exerciseId: int,
+    is_updating_soal: bool,
+    latihan: schemas.ExerciseUpdate,
+    db: db_dependency,
+    is_resetting_results: bool = False,
+    current_user: User = current_user_dependency,
+):
+    if current_user.user_type != 1:
+        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
+    
+    new_latihan = db.query(Exercise).filter(Exercise.exercise_id == exerciseId)
+    
+    if not new_latihan:
+        raise HTTPException(status_code=404, detail="Latihan tidak ditemukan!")
+    
+    if new_latihan.first().author_id != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
+
+    if is_resetting_results:
+        db.query(StudentExerciseResult).filter(
+            StudentExerciseResult.exercise_id == exerciseId        
+        ).delete()
+
+
+    new_latihan.first().updated_at = datetime.now()
+    
+    if is_updating_soal:
+        new_latihan.first().approval_status = 'DRAFT'
+    else:
+        new_latihan.first().approval_status = 'PENDING'
+    
+    new_latihan.update(latihan.model_dump())
+    
+    db.commit()
+    # db.refresh(new_latihan)
+    return {"message": "Latihan berhasil diperbarui!", "status": True}
+
+
+
+# Delete Latihan
+@router.delete("/{exerciseId}", status_code=status.HTTP_200_OK)
+async def delete_my_latihan(
+    exerciseId: int, db: db_dependency, current_user: User = current_user_dependency
+):
+    if current_user.user_type != 1:
+        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
+
+    latihan = db.query(Exercise).filter(Exercise.exercise_id == exerciseId).first()
+
+    if not latihan:
+        raise HTTPException(status_code=404, detail="Latihan tidak ditemukan")
+
+    if latihan.author_id != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
+
+    db.delete(latihan)
+    db.commit()
+    return {"message": "Latihan berhasil di hapus!", "status": True}
+
 
 
 # Modify Exercise Status
@@ -224,24 +345,3 @@ async def modify_exercise_status(
     #     return {"message": "Status latihan berhasil di update!", "status": True}
     else:
         raise HTTPException(status_code=400, detail="Status tidak valid!")
-
-
-# Delete Latihan
-@router.delete("/{exerciseId}", status_code=status.HTTP_200_OK)
-async def delete_my_latihan(
-    exerciseId: int, db: db_dependency, current_user: User = current_user_dependency
-):
-    if current_user.user_type != 1:
-        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
-
-    latihan = db.query(Exercise).filter(Exercise.exercise_id == exerciseId).first()
-
-    if not latihan:
-        raise HTTPException(status_code=404, detail="Latihan tidak ditemukan")
-
-    if latihan.author_id != current_user.user_id:
-        raise HTTPException(status_code=403, detail="Akun ini tidak diberi ijin!")
-
-    db.delete(latihan)
-    db.commit()
-    return {"message": "Latihan berhasil di hapus!", "status": True}

@@ -3,8 +3,6 @@ from sqlalchemy.orm import relationship, declarative_base
 from ..database.database import Base
 from sqlalchemy.sql import func
 
-Base = declarative_base()
-
 class User(Base):
     __tablename__ = 'Users'
     user_id = Column(Integer, primary_key=True, autoincrement=True)
@@ -15,6 +13,7 @@ class User(Base):
     user_type = Column(Integer, nullable=False)
     registration_status = Column(Enum('PENDING', 'APPROVED'), default='PENDING')
     school = Column(String(255), nullable=False)
+    profile_picture = Column(String(255))
     registration_date = Column(TIMESTAMP, server_default=func.current_timestamp())
     updated_at = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
 
@@ -38,7 +37,7 @@ class Material(Base):
     filename = Column(String(255), nullable=False)
     description = Column(Text)
     author_id = Column(Integer, ForeignKey('Users.user_id'))
-    approval_status = Column(Enum('PENDING', 'APPROVED', 'REJECTED', 'DRAFT'), default='PENDING')
+    approval_status = Column(Enum('PENDING', 'APPROVED', 'REJECTED'), default='PENDING')
     author = relationship("User", backref="materials")
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
     updated_at = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
@@ -64,13 +63,6 @@ class Question(Base):
     question_text = Column(Text, nullable=False)
     option_text = Column(JSON, nullable=False)
     answer_keys = Column(JSON, nullable=False)
-    # exercise = relationship("Exercise", backref="question")
-
-# class Option(Base):
-#     __tablename__ = 'Options'
-#     option_id = Column(Integer, primary_key=True, autoincrement=True)
-#     question_id = Column(Integer, ForeignKey('Questions.question_id'), nullable=False)
-#     question = relationship("Question", backref="options")
 
 class StudentExerciseResult(Base):
     __tablename__ = 'StudentExerciseResults'
@@ -91,6 +83,18 @@ class StudentAnswer(Base):
     is_correct = Column(Boolean, nullable=False)
     result = relationship("StudentExerciseResult", backref="answers", cascade="all, delete")
     question = relationship("Question", backref="answers", cascade="all, delete")
+
+class ReactionArticle(Base):
+    __tablename__ = 'ArtikelReaksi'
+    article_id = Column(Integer, primary_key=True, autoincrement=True)
+    author_id = Column(Integer, ForeignKey('Users.user_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
+    title = Column(String(255), nullable=False)
+    filename = Column(String(255), nullable=False)
+    description = Column(Text, nullable=False)
+    approval_status = Column(Enum('PENDING', 'APPROVED', 'REJECTED'), default='PENDING')
+    created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
+    updated_at = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
+    author = relationship("User", backref="reaction_articles")
 
 class PengenalanReaksi(Base):
     __tablename__ = 'PengenalanReaksi'
