@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+sqlalchemy
+pymysql
+pyjwt
+python-jose
+passlib[bcrypt]
+opencv-python 
+Pillow
+ffmpeg-python
